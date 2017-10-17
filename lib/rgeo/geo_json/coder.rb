@@ -36,6 +36,7 @@ module RGeo
         @geo_factory = opts[:geo_factory] || RGeo::Cartesian.preferred_factory
         @entity_factory = opts[:entity_factory] || EntityFactory.instance
         @json_parser = opts[:json_parser]
+        @reverse_coordinates = opts[:reverse_coordinates] || false
         case @json_parser
         when :json
           require "json" unless defined?(JSON)
@@ -136,36 +137,43 @@ module RGeo
       end
 
       def _encode_geometry(object) # :nodoc:
+        need_reverse =  (@reverse_coordinates && object.coordinates.flatten.present?)
         case object
         when RGeo::Feature::Point
+          coordinates = need_reverse ? object.coordinates.reverse : object.coordinates
           {
             "type" => "Point",
-            "coordinates" => object.coordinates
+            "coordinates" => coordinates
           }
         when RGeo::Feature::LineString
+          coordinates = need_reverse ? object.coordinates.map(&:reverse) : object.coordinates
           {
             "type" => "LineString",
-            "coordinates" => object.coordinates
+            "coordinates" => coordinates
           }
         when RGeo::Feature::Polygon
+          coordinates = need_reverse ? object.coordinates.map {|x| x.map(&:reverse)} : object.coordinates
           {
             "type" => "Polygon",
-            "coordinates" => object.coordinates
+            "coordinates" => coordinates
           }
         when RGeo::Feature::MultiPoint
+          coordinates = need_reverse ? object.coordinates.map(&:reverse) : object.coordinates
           {
             "type" => "MultiPoint",
-            "coordinates" => object.coordinates
+            "coordinates" => coordinates
           }
         when RGeo::Feature::MultiLineString
+          coordinates = need_reverse ? object.coordinates.map { |x| x.map(&:reverse) } : object.coordinates
           {
             "type" => "MultiLineString",
-            "coordinates" => object.coordinates
+            "coordinates" => coordinates
           }
         when RGeo::Feature::MultiPolygon
+          coordinates = need_reverse ? object.coordinates.map {|x| x.map {|x| x.map(&:reverse) }} : object.coordinates
           {
             "type" => "MultiPolygon",
-            "coordinates" => object.coordinates
+            "coordinates" => coordinates
           }
         when RGeo::Feature::GeometryCollection
           {
